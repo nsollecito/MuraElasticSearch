@@ -86,7 +86,7 @@
 
 
 
-	function indexByRecordset(numeric startRow, numeric maxRows) {
+	function indexByRecordset(numeric startRow=1, numeric maxRows=1) {
 		var queryService = new query();
 		var result = "";
 		var aDocs = [];
@@ -94,6 +94,7 @@
 	    /* set properties using implict setters */ 
 	    queryService.setDatasource(variables.configBean.getDatasource()); 
 	    queryService.setName("rsContent"); 
+	    queryService.setMaxRows(arguments.maxRows);
 
 	    result = queryService.execute(sql="
 		      SELECT 
@@ -119,6 +120,8 @@
 			docs=aDocs,
 			idField='contentId'
 		);
+
+		variables.wrapper.refresh(index=variables.indexName);
 
 		return result;
 	}
