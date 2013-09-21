@@ -171,4 +171,44 @@
 	}
 
 </cfscript>
+
+
+	<cffunction name="getPublicSearchReplacement" returntype="query" access="public" output="false">
+		<cfargument name="siteid" type="string" required="true">
+		<cfargument name="keywords" type="string" required="true">
+		<cfargument name="tag" type="string" required="true" default="">
+		<cfargument name="sectionID" type="string" required="true" default="">
+		<cfargument name="categoryID" type="string" required="true" default="">
+
+	</cffunction>
+
+
+	<cffunction name="getPrivateSearchReplacement" returntype="query" access="public" output="false">
+		<cfargument name="siteid" type="string" required="true">
+		<cfargument name="keywords" type="string" required="true">
+		<cfargument name="tag" type="string" required="true" default="">
+		<cfargument name="sectionID" type="string" required="true" default="">
+		<cfargument name="searchType" type="string" required="true" default="default" hint="Can be default or image">
+
+		<cfreturn arrayOfStructsToQuery(variables.wrapper.search(argumentCollection=arguments)) />
+	</cffunction>		
+
+
+	<cffunction name="ArrayOfStructsToQuery" access="public" returntype="query" output="false">
+		<cfargument name="StructArray" type="any" required="true" />
+		
+		<cfscript>
+			KeyList=StructKeyList(arguments.StructArray[1]);
+			qReturn = QueryNew(KeyList);
+			
+			for(i=1; i <= ArrayLen(arguments.StructArray); i=i+1){
+				 QueryAddRow(qReturn);
+				 for(y=1;y lte ListLen(KeyList);y=y+1){
+				 	QuerySetCell(qReturn, ListGetAt(KeyList,y), arguments.StructArray[i][ListGetAt(KeyList,y)]);
+				 }
+			}
+			return qReturn;
+		</cfscript>
+	</cffunction>	
+
 </cfcomponent>

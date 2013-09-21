@@ -21,6 +21,8 @@
 
 	dbStats = search.getStats()['indices'][siteId]['total'];
 
+//writeDump(var=search.getPrivateSearchReplacement(siteId=siteId, keywords='Running'), abort=1);
+
 	if ( isDefined('form.submit') ) { 
 		if ( form.submit == 'Index Records' )
 			search.indexByRecordset(argumentCollection=form);
@@ -73,7 +75,24 @@
 		</form>
 	</p>
 	<cfif isDefined("form.submit") && form.submit == 'Run Search'>
-		<cfdump var="#search.search(argumentCollection=form)#">
+		<cfset thisSearch = search.search(argumentCollection=form) />
+		<cfset results = thisSearch.hits.hits />
+
+		<cfif !arrayLen(results)>
+			<strong>No Results for #form.q#</strong>
+		<cfelse>
+			<p><strong>#arrayLen(results)#</strong> results returned in #thisSearch.took#ms.</p>
+			<ol>
+				<cfloop from="1" to="#arrayLen(results)#" index="a">
+					<cfset thisRecord = results[a]['_source']>
+					<li>
+						<strong>#dateFormat(thisRecord.releaseDate, 'short')# #thisRecord.title#</strong><br />
+						<p>#thisRecord.summary#</p>
+						<small>#thisRecord.credits# | ContentId: #thisRecord.contentId#</small>
+					</li>
+				</cfloop>
+			</ol>
+		</cfif>
 	</cfif>
 	</cfoutput>
 </cfsavecontent>
