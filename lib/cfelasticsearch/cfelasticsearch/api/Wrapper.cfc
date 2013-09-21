@@ -134,6 +134,7 @@
 		</cfscript>
 	</cffunction>
 
+
 	<cffunction name="refresh" access="public" returntype="struct" output="false">
 		<cfargument name="index" type="string" required="false" />
 
@@ -146,6 +147,22 @@
 			);
 		</cfscript>
 	</cffunction>
+
+
+	<cffunction name="getStats" access="public" returntype="struct" output="false">
+		<cfargument name="index" type="string" required="false" />
+
+		<cfscript>
+			var uri = _getIndexAndTypeUri( args=arguments, typeAllowed=false ) & "/_stats";
+
+			return _call(
+				  uri = uri
+				, method = "GET"
+			);
+		</cfscript>
+	</cffunction>
+
+
 
 <!--- private utility --->
 	<cffunction name="_call" access="private" returntype="any" output="false">

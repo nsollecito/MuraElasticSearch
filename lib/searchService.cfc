@@ -124,6 +124,11 @@
 	}
 
 
+	function getStats(string index=variables.indexName) {
+		return variables.wrapper.getStats(arguments.index);
+	}
+
+
 	function deleteDoc(string contentId) {
 		return variables.wrapper.deleteDoc(index=variables.index, id=arguments.contentId);
 	}
