@@ -14,7 +14,21 @@
 	<version>0.1</version>
 	<providerURL></providerURL>
 	<category>Application</category>
-	<settings></settings>
+	<settings>
+		<setting>
+			<name>endpoint</name>
+			<label>ElasticSearch Endpoint</label>
+			<hint>This is the URL of your ElasticSearch instance. Default is 'http://localhost:9200'</hint>
+			<type>text</type>
+			<required>false</required>
+			<validation></validation>
+			<regex></regex>
+			<message></message>
+			<defaultvalue>http://localhost:9200/</defaultvalue>
+			<optionlist></optionlist>
+			<optionlabellist></optionlabellist>
+		</setting>
+	</settings>
 	<eventHandlers>
 		<eventHandler event="onApplicationLoad" component="eventHandler" persist="false"/>	
 	</eventHandlers>

@@ -17,7 +17,7 @@
 	param name="form.startRow" default="1";
 	param name="form.q" default="";
 
-	search = new lib.searchService(siteId=siteId, configBean=$.globalConfig());
+	search = new lib.searchService(siteId=siteId, pluginConfig=$.getPlugin(), configBean=$.globalConfig());
 
 	dbStats = search.getStats()['indices'][siteId]['total'];
 

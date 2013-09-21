@@ -12,6 +12,10 @@
 		// ElasticSearch server URL
 		this.endPoint = "http://localhost:9200";
 
+		if ( len(arguments.pluginConfig.getCustomSetting('endpoint')) )
+			this.endPoint = arguments.pluginConfig.getCustomSetting('endpoint');
+
+
 		variables.wrapper = new cfelasticsearch.cfelasticsearch.api.Wrapper();
 		variables.siteId = arguments.siteId;
 		variables.indexName = arguments.siteId;
@@ -81,7 +85,8 @@
 				metadesc = arguments.contentBean.getMetaDesc(),
 				metakeywords = arguments.contentBean.getMetakeywords(),
 				parentId = arguments.contentBean.getParentId(),
-				releaseDate = arguments.contentBean.getReleaseDate()
+				releaseDate = arguments.contentBean.getReleaseDate(),
+				lastUpdate = arguments.contentBean.getLastUpdate()
 			},
 			idField='contentId'
 		);
@@ -105,11 +110,11 @@
 		      SELECT 
 		          contentID, type, subtype, siteID, Title, Body, summary, tags, 
 		          fileId, filename, urlTitle, credits, metadesc, metakeywords,
-		          parentId, releaseDate
+		          parentId, releaseDate, lastUpdate
 		      FROM tcontent
 		      WHERE 
 				  active = 1
-				  and type in ('Page','Folder','Portal','Calendar','Gallery','Link')
+				  and type in ('Page','Folder','Portal','Calendar','Gallery','Link','File')
 				  and siteID = '#variables.siteId#'
 				  ORDER BY lastUpdate DESC
 		    ");

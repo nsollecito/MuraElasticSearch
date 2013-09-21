@@ -17,7 +17,7 @@
 
 	function onAfterContentSave($) {
 		var content = $.event('contentBean');
-		if ( content.getActive() && listFindNoCase("Page,Folder,Portal,Calendar,Gallery,Link", content.getType()) )
+		if ( content.getActive() && listFindNoCase("Page,Folder,Portal,Calendar,Gallery,Link,File", content.getType()) )
 			variables.searchService.indexItem(content);
 	}
 
