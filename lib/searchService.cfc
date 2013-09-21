@@ -7,6 +7,7 @@
 
 		variables.configBean = arguments.configBean;
 		variables.pluginConfig = arguments.pluginConfig;
+		variables.dbType = variables.configBean.getDbType();
 
 		// ElasticSearch server URL
 		this.endPoint = "http://localhost:9200";
@@ -98,7 +99,9 @@
 	    queryService.setName("rsContent"); 
 	    queryService.setMaxRows(arguments.maxRows);
 
-	    result = queryService.execute(sql="
+
+	    savecontent variable="myQuery" {
+		    writeOutput("
 		      SELECT 
 		          contentID, type, subtype, siteID, Title, Body, summary, tags, 
 		          fileId, filename, urlTitle, credits, metadesc, metakeywords,
@@ -109,7 +112,26 @@
 				  and type in ('Page','Folder','Portal','Calendar','Gallery','Link')
 				  and siteID = '#variables.siteId#'
 				  ORDER BY lastUpdate DESC
-	    ");
+		    ");
+		}
+
+		// retrieve resultset by dbtype
+		if (variables.dbType == 'mysql') {
+		    result = queryService.execute(sql="
+		    	#myQuery#
+		    	LIMIT #arguments.maxRows# OFFSET #arguments.startRow#
+		    ");
+		} else if (variables.dbtype == 'oracle') {
+		    result = queryService.execute(sql="
+				SELECT * FROM (
+					SELECT a.*, rownum rn
+					FROM (#myQuery#) a
+					WHERE rownum < #arguments.maxRows+arguments.startRow#)
+				WHERE rn >= #arguments.startRow#
+		    ");
+		}
+
+
 	    rsContent = result.getResult();
 
 	    for (row in rsContent) {
