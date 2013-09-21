@@ -78,7 +78,9 @@
 				urlTitle = arguments.contentBean.getUrlTitle(),
 				credits = arguments.contentBean.getCredits(),
 				metadesc = arguments.contentBean.getMetaDesc(),
-				metakeywords = arguments.contentBean.getMetakeywords()
+				metakeywords = arguments.contentBean.getMetakeywords(),
+				parentId = arguments.contentBean.getParentId(),
+				releaseDate = arguments.contentBean.getReleaseDate()
 			},
 			idField='contentId'
 		);
@@ -100,7 +102,7 @@
 		      SELECT 
 		          contentID, type, subtype, siteID, Title, Body, summary, tags, 
 		          fileId, filename, urlTitle, credits, metadesc, metakeywords,
-		          parentId
+		          parentId, releaseDate
 		      FROM tcontent
 		      WHERE 
 				  active = 1
