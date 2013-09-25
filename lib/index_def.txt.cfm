@@ -26,7 +26,11 @@ curl -XPUT 'localhost:9200/default/content/_mapping?pretty=true' -d '
         "type" : "string", "boost" : "3", "store" : "yes"
       },
       "tags" : {
-        "type" : "string", "store" : "yes"
+        "type" : "multi_field", 
+        "fields" : {
+        	"tags" : { "type" : "string", "index" : "analyzed" },
+        	"facet" : { "type" : "string", "index" : "not_analyzed" }
+        }
       },
       "type" : {
         "type" : "string", "store" : "yes"
@@ -68,13 +72,13 @@ curl -XPUT 'localhost:9200/default/content/_mapping?pretty=true' -d '
         "type" : "string"
       },
       "thumbnail" : {
-      	"type" : "binary"
+      	"type" : "string"
       },
       "isnav" : {
         "type" : "boolean", "store" : "yes", "index" : "not_analyzed"
       },
       "searchexclude" : {
-        "type" : "boolean"
+        "type" : "boolean", "store" : "yes"
       },
       "credits" : {
         "type" : "multi_field", 

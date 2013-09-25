@@ -93,7 +93,7 @@
 				remoteurl = arguments.contentBean.getRemoteUrl(),
 				fileid = arguments.contentBean.getFileId(),
 				path = arguments.contentBean.getPath(),
-				thumbnail = arguments.content.getImageUrl(size="small"),
+				thumbnail = arguments.content.getImageUrl(size="small", complete=true),
 				isnav = arguments.contentBean.getIsNav(),
 				searchexclude = arguments.contentBean.getSearchExclude(),
 				credits = arguments.contentBean.getCredits(),
@@ -163,7 +163,14 @@
     			formattedDate = dateFormat(row[thisField], "YYYY-mm-dd") & " " & timeFormat(row[thisField], "HH:mm:ss");
     			row[thisField] = formattedDate;
 	    	}
-	    	row['thumbnail'] = $.getBean('content').getImageUrl(fileid=row['fileid']);
+	    	
+	    	if ( len(row['fileid']) )
+	    		row['thumbnail'] = $.getContentRenderer().createHREFForImage(fileid=row['fileid'], size="small", complete=true);
+	    	else
+				row['thumbnail'] = "";
+
+			// convert all structkeys to lowercase
+			row = convertStructToLower(row);
 
 	    	arrayAppend(aDocs, row);
 		}
@@ -198,7 +205,7 @@
 </cfscript>
 
 
-	<cffunction name="getPublicSearchReplacement" returntype="query" access="public" output="false">
+	<cffunction name="getPublicSearchReplacement" returntype="any" access="public" output="false">
 		<cfargument name="siteid" type="string" required="true">
 		<cfargument name="keywords" type="string" required="true">
 		<cfargument name="tag" type="string" required="true" default="">
@@ -213,14 +220,11 @@
 				filtered = {
 					query = {
 						query_string = { query = arguments.keywords }
-					}, 
-					filter = {
-						bool = {
-							must = {
-								term = { searchexclude = '0' }
-							}
-						}
 					}
+					/* , 
+					filter = {
+						term = { searchexclude = 0 }
+					} */
 				}
 			};
 
@@ -257,6 +261,18 @@
 				, false);
 			};
 
+			// display start-stop range
+			/*
+			structAppend(body, {
+				range = {
+					displayStart = {
+						from = dateFormat(createDate(1845,1,1), "YYYY-MM-dd") & " 00:00:00",
+						to = dateFormat(now(), "YYYY-MM-dd") & " " & timeFormat(now(), "HH:mm:ss"),
+						include_upper = true
+					}
+				}
+			}, false); */
+
 			// wrap query
 			body = { query = body };
 
@@ -270,7 +286,7 @@
 			structAppend(body, {
 				facets = {
 					tags = {
-						terms = {field = "tags"}
+						terms = {field = "tags.facet"}
 					},
 					credits = {
 						terms= {field = "credits.facet"}
@@ -294,12 +310,10 @@
 			result = variables.wrapper._call(
 				  uri    = "/#arguments.siteid#/content/_search"
 				, method = "POST"
-				, body   = lCase(serializeJson( body ))
+				, body   = serializeJson( body )
 			);
 
-			writeDump(var=lcase(serializeJson( body )));
-			writeDump(var=body);
-			writeDump(var=result, abort=1);
+			return result;
 		</cfscript>
 
 	</cffunction>
@@ -313,6 +327,34 @@
 		<cfargument name="searchType" type="string" required="true" default="default" hint="Can be default or image">
 
 		<cfreturn arrayOfStructsToQuery(variables.wrapper.search(argumentCollection=arguments)) />
-	</cffunction>		
+	</cffunction>
+
+
+	 <cffunction name="convertStructToLower" access="public" returntype="struct">
+        <cfargument name="st" required="true" type="struct">
+
+        <cfset var aKeys = structKeyArray(st)>
+        <cfset var stN = structNew()>
+        <cfset var i= 0>
+        <cfset var ai= 0>
+        <cfloop array="#aKeys#" index="i">
+            <cfif isStruct(st[i])>
+                <cfset stN['#lCase(i)#'] = convertStructToLower(st[i])>
+            <cfelseif isArray(st[i])>
+                <cfloop from=1 to="#arraylen(st[i])#" index="ai">
+                    <cfif isStruct(st[i][ai])>
+                        <cfset st[i][ai] = convertStructToLower(st[i][ai])>
+                    <cfelse>
+                        <cfset st[i][ai] = st[i][ai]>
+                    </cfif>
+                </cfloop>
+                <cfset stN['#lcase(i)#'] = st[i]>
+            <cfelse>
+                <cfset stN['#lcase(i)#'] = st[i]>
+            </cfif>
+        </cfloop>
+        <cfreturn stn>
+    </cffunction>
+
 
 </cfcomponent>
