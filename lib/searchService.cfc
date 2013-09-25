@@ -93,7 +93,7 @@
 				remoteurl = arguments.contentBean.getRemoteUrl(),
 				fileid = arguments.contentBean.getFileId(),
 				path = arguments.contentBean.getPath(),
-				// thumbnail = toBinary($.getFile);
+				thumbnail = arguments.content.getImageUrl(size="small"),
 				isnav = arguments.contentBean.getIsNav(),
 				searchexclude = arguments.contentBean.getSearchExclude(),
 				credits = arguments.contentBean.getCredits(),
@@ -114,7 +114,8 @@
 		var queryService = new query();
 		var result = "";
 		var aDocs = [];
-		var aDateFields = listToArray("releasedate,lastupdate,created,expires,displaystart,displaystop");
+		var aDateFields = listToArray(uCase("releasedate,lastupdate,created,displaystart,displaystop"));
+		var $ = application.serviceFactory.getBean('$');
 	    
 	    /* set properties using implict setters */ 
 	    queryService.setDatasource(variables.configBean.getDatasource()); 
@@ -134,7 +135,7 @@
 				  active = 1
 				  and type in ('Page','Folder','Portal','Calendar','Gallery','Link','File')
 				  and siteID = '#variables.siteId#'
-				  ORDER BY lastUpdate DESC
+				  ORDER BY lastupdate DESC
 		    ");
 		}
 
@@ -159,13 +160,10 @@
 	    for (row in rsContent) {
 	    	// format date fields
 	    	for (thisField in aDateFields) {
-	    		if ( isDate(row[uCase(thisField)]) ) {
-	    			formattedDate = dateFormat(row[thisField], "YYYY-mm-dd") & " " & timeFormat(row[thisField], "HH:mm:ss");
-	    			row[thisField] = formattedDate;
-	    		} else {
-	    			row[thisField] = javaCast("null", "");
-	    		}
+    			formattedDate = dateFormat(row[thisField], "YYYY-mm-dd") & " " & timeFormat(row[thisField], "HH:mm:ss");
+    			row[thisField] = formattedDate;
 	    	}
+	    	row['thumbnail'] = $.getBean('content').getImageUrl(fileid=row['fileid']);
 
 	    	arrayAppend(aDocs, row);
 		}
@@ -219,7 +217,7 @@
 					filter = {
 						bool = {
 							must = {
-								term = { searchexclude = false }
+								term = { searchexclude = '0' }
 							}
 						}
 					}
@@ -296,9 +294,11 @@
 			result = variables.wrapper._call(
 				  uri    = "/#arguments.siteid#/content/_search"
 				, method = "POST"
-				, body   = serializeJson( body )
+				, body   = lCase(serializeJson( body ))
 			);
 
+			writeDump(var=lcase(serializeJson( body )));
+			writeDump(var=body);
 			writeDump(var=result, abort=1);
 		</cfscript>
 

@@ -86,6 +86,9 @@
 				<cfloop from="1" to="#arrayLen(results)#" index="a">
 					<cfset thisRecord = results[a]['_source']>
 					<li>
+						<cfif len(thisRecord.thumbnail)>
+							<img src="#thisRecord.thumbnail#" align="left" />
+						</cfif>
 						<strong>#dateFormat(thisRecord.releaseDate, 'short')# #thisRecord.title#</strong><br />
 						<p>#thisRecord.summary#</p>
 						<small>#thisRecord.credits# | ContentId: #thisRecord.contentId#</small>
