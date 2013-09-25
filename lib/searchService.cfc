@@ -128,7 +128,7 @@
 				contentid, contenthistid, siteid, title, menutitle, summary, tags, type, subtype, 
 				urltitle, restricted, restrictgroups, displaystart, displaystop, remotesource, 
 				remotesourceurl, remoteurl, fileid, path, body, isnav, searchexclude, credits, filename,
-				lastupdate, parentid, releasedate, lastupdate, created, expires
+				parentid, releasedate, lastupdate, created, expires
 		      FROM tcontent
 		      WHERE 
 				  active = 1
@@ -159,7 +159,7 @@
 	    for (row in rsContent) {
 	    	// format date fields
 	    	for (thisField in aDateFields) {
-	    		if ( isDate(row[thisField]) ) {
+	    		if ( isDate(row[uCase(thisField)]) ) {
 	    			formattedDate = dateFormat(row[thisField], "YYYY-mm-dd") & " " & timeFormat(row[thisField], "HH:mm:ss");
 	    			row[thisField] = formattedDate;
 	    		} else {

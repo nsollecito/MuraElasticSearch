@@ -165,7 +165,7 @@
 
 
 <!--- private utility --->
-	<cffunction name="_call" access="private" returntype="any" output="false">
+	<cffunction name="_call" access="public" returntype="any" output="false">
 		<cfargument name="uri" type="string" required="true" />
 		<cfargument name="method" type="string" required="true" />
 		<cfargument name="body" type="string" required="false" />
