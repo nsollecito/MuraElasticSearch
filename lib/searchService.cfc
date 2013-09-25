@@ -22,7 +22,10 @@
 
 		// make sure ElasticSearch is running
 		if (!checkService()) {
+			flush interval="100";
+			writeOutput("Starting ElasticSearch...");
 			startService();
+			sleep(8000);
 		}
 
 		// make sure index exists
@@ -70,23 +73,36 @@
 			index=variables.indexName,
 			type="content",
 			doc={
-				contentId = arguments.contentBean.getContentId(),
+				contentid = arguments.contentBean.getContentId(),
+				contenthistid = arguments.contentBean.getContentHistId(),
+				siteid = arguments.contentbean.getSiteId(),
+				title = arguments.contentBean.getTitle(),
+				menutitle = arguments.contentBean.getMenuTitle(),
+				summary = arguments.contentBean.getSummary(),
+				body = arguments.contentBean.getBody(),
+				tags = arguments.contentBean.getTags(),
 				type = arguments.contentBean.getType(),
 				subtype = arguments.contentBean.getSubtype(),
-				title = arguments.contentBean.getTitle(),
-				body = arguments.contentBean.getBody(),
-				summary = arguments.contentBean.getSummary(),
-				tags = arguments.contentBean.getTags(),
-				fileId = arguments.contentBean.getFileId(),
-				parentId = arguments.contentBean.getParentId(),
-				filename = arguments.contentBean.getFilename(),
 				urlTitle = arguments.contentBean.getUrlTitle(),
+				restricted = arguments.contentBean.getRestricted(),
+				restrictgroups = arguments.contentBean.getRestrictGroups(),
+				displaystart = arguments.contentBean.getDisplayStart(),
+				displaystop = arguments.contentBean.getDisplayStop(),
+				remotesource = arguments.contentBean.getRemoteSource(),
+				remotesourceurl = arguments.contentBean.getRemoteSourceUrl(),
+				remoteurl = arguments.contentBean.getRemoteUrl(),
+				fileid = arguments.contentBean.getFileId(),
+				path = arguments.contentBean.getPath(),
+				// thumbnail = toBinary($.getFile);
+				isnav = arguments.contentBean.getIsNav(),
+				searchexclude = arguments.contentBean.getSearchExclude(),
 				credits = arguments.contentBean.getCredits(),
+				filename = arguments.contentBean.getFilename(),
+				parentid = arguments.contentBean.getParentId(),
 				metadesc = arguments.contentBean.getMetaDesc(),
 				metakeywords = arguments.contentBean.getMetakeywords(),
-				parentId = arguments.contentBean.getParentId(),
-				releaseDate = arguments.contentBean.getReleaseDate(),
-				lastUpdate = arguments.contentBean.getLastUpdate()
+				releasedate = arguments.contentBean.getReleaseDate(),
+				lastupdate = arguments.contentBean.getLastUpdate()
 			},
 			idField='contentId'
 		);
@@ -98,6 +114,7 @@
 		var queryService = new query();
 		var result = "";
 		var aDocs = [];
+		var aDateFields = listToArray("releasedate,lastupdate,created,expires,displaystart,displaystop");
 	    
 	    /* set properties using implict setters */ 
 	    queryService.setDatasource(variables.configBean.getDatasource()); 
@@ -108,9 +125,10 @@
 	    savecontent variable="myQuery" {
 		    writeOutput("
 		      SELECT 
-		          contentID, type, subtype, siteID, Title, Body, summary, tags, 
-		          fileId, filename, urlTitle, credits, metadesc, metakeywords,
-		          parentId, releaseDate, lastUpdate
+				contentid, contenthistid, siteid, title, menutitle, summary, tags, type, subtype, 
+				urltitle, restricted, restrictgroups, displaystart, displaystop, remotesource, 
+				remotesourceurl, remoteurl, fileid, path, body, isnav, searchexclude, credits, filename,
+				lastupdate, parentid, releasedate, lastupdate, created, expires
 		      FROM tcontent
 		      WHERE 
 				  active = 1
@@ -136,10 +154,19 @@
 		    ");
 		}
 
-
 	    rsContent = result.getResult();
 
 	    for (row in rsContent) {
+	    	// format date fields
+	    	for (thisField in aDateFields) {
+	    		if ( isDate(row[thisField]) ) {
+	    			formattedDate = dateFormat(row[thisField], "YYYY-mm-dd") & " " & timeFormat(row[thisField], "HH:mm:ss");
+	    			row[thisField] = formattedDate;
+	    		} else {
+	    			row[thisField] = javaCast("null", "");
+	    		}
+	    	}
+
 	    	arrayAppend(aDocs, row);
 		}
 
@@ -147,7 +174,7 @@
 			index=variables.indexName,
 			type="content",
 			docs=aDocs,
-			idField='contentId'
+			idField='contentid'
 		);
 
 		variables.wrapper.refresh(index=variables.indexName);
@@ -180,6 +207,101 @@
 		<cfargument name="sectionID" type="string" required="true" default="">
 		<cfargument name="categoryID" type="string" required="true" default="">
 
+		<cfscript>
+			var result = "";
+
+			// search criteria
+			body = {
+				filtered = {
+					query = {
+						query_string = { query = arguments.keywords }
+					}, 
+					filter = {
+						bool = {
+							must = {
+								term = { searchexclude = false }
+							}
+						}
+					}
+				}
+			};
+
+			// tags
+			if ( len(arguments.tag) ) {
+				structAppend(body.filtered, 
+				{
+					filter = {
+						term = { tags = arguments.tag }
+					}
+				}
+				, false);
+			};
+
+			// if for specific section
+			if ( len(arguments.sectionid) ) {
+				structAppend(body.filtered, 
+				{
+					filter = {
+						term = { parentid = arguments.sectionid }
+					}
+				}
+				, false);
+			};
+
+			// category filter 
+			if ( len(arguments.categoryid) ) {
+				structAppend(body.filtered, 
+				{
+					filter = {
+						term = { categoryid = "*#arguments.categoryid#*" }
+					}
+				}
+				, false);
+			};
+
+			// wrap query
+			body = { query = body };
+
+			// pagination
+			/* structAppend(body, {
+				from = 1, 
+				size = 100
+			}, false); */
+
+			// facets
+			structAppend(body, {
+				facets = {
+					tags = {
+						terms = {field = "tags"}
+					},
+					credits = {
+						terms= {field = "credits.facet"}
+					},
+					subtype = {
+						terms = {field = "subtype"}
+					}
+				}
+			}, false);
+
+			// sorting 
+			structAppend(body, {
+				sort = [
+					{releasedate = {order = "asc", ignore_unmapped = true}},
+					{lastupdate = {order = "asc", ignore_unmapped = true}},
+					"_score"
+				]
+			}, false);
+
+			// execute query
+			result = variables.wrapper._call(
+				  uri    = "/#arguments.siteid#/content/_search"
+				, method = "POST"
+				, body   = serializeJson( body )
+			);
+
+			writeDump(var=result, abort=1);
+		</cfscript>
+
 	</cffunction>
 
 
@@ -192,23 +314,5 @@
 
 		<cfreturn arrayOfStructsToQuery(variables.wrapper.search(argumentCollection=arguments)) />
 	</cffunction>		
-
-
-	<cffunction name="ArrayOfStructsToQuery" access="public" returntype="query" output="false">
-		<cfargument name="StructArray" type="any" required="true" />
-		
-		<cfscript>
-			KeyList=StructKeyList(arguments.StructArray[1]);
-			qReturn = QueryNew(KeyList);
-			
-			for(i=1; i <= ArrayLen(arguments.StructArray); i=i+1){
-				 QueryAddRow(qReturn);
-				 for(y=1;y lte ListLen(KeyList);y=y+1){
-				 	QuerySetCell(qReturn, ListGetAt(KeyList,y), arguments.StructArray[i][ListGetAt(KeyList,y)]);
-				 }
-			}
-			return qReturn;
-		</cfscript>
-	</cffunction>	
 
 </cfcomponent>

@@ -19,15 +19,15 @@
 
 	search = new lib.searchService(siteId=siteId, pluginConfig=$.getPlugin(), configBean=$.globalConfig());
 
-	dbStats = search.getStats()['indices'][siteId]['total'];
+//writeDump(var=search.getPublicSearchReplacement(siteId=siteId, keywords='City Livin'), abort=1);
 
-//writeDump(var=search.getPrivateSearchReplacement(siteId=siteId, keywords='Running'), abort=1);
 
 	if ( isDefined('form.submit') ) { 
 		if ( form.submit == 'Index Records' )
-			search.indexByRecordset(argumentCollection=form);
+			index = search.indexByRecordset(argumentCollection=form);
 	}
 
+	dbStats = search.getStats()['indices'][siteId]['total'];
 </cfscript>
 
 <cfsavecontent variable="variables.body">
