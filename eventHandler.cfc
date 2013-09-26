@@ -8,12 +8,18 @@
 --->
 <cfcomponent extends="mura.plugin.pluginGenericEventHandler">
 <cfscript>
-
 	function onApplicationLoad($) {
+		var contentGateway=getBean("contentGateway")
+		
 		variables.pluginConfig.addEventHandler(this);
 		variables.searchService = new lib.searchService(siteId=$.event('siteId'), pluginConfig=variables.pluginConfig, configBean=variables.configBean);
-	}
 
+		//contentGateway.injectMethod("getPublicSearch#variables.pluginConfig.getPluginID()#", contentGateway.getPublicSearch);
+		//contentGateway.injectMethod("getPrivateSearch#variables.pluginConfig.getPluginID()#",contentGateway.getPrivateSearch);
+
+		contentGateway.injectMethod("getPrivateSearch", searchService.getPrivateSearchReplacement);
+		contentGateway.injectMethod("getPublicSearch", searchService.getPublicSearchReplacement);
+	}
 
 	function onAfterContentSave($) {
 		var content = $.event('contentBean');
@@ -21,10 +27,9 @@
 			variables.searchService.indexItem(content);
 	}
 
-
 	function onAfterContentDelete($) {
 		var content=$.event("contentBean")
-		variables.searchService.deleteDoc(content.getContentId);	
+		variables.searchService.deleteDoc(content.getContentId());	
 	}
 
 </cfscript>

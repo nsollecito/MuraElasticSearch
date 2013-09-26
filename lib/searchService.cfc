@@ -22,10 +22,7 @@
 
 		// make sure ElasticSearch is running
 		if (!checkService()) {
-			flush interval="100";
-			writeOutput("Starting ElasticSearch...");
-			startService();
-			sleep(8000);
+			throw "Can't find ElasticSearch. Please check to make sure the service is running and your Endpoint setting is correct in the plugin.";
 		}
 
 		// make sure index exists
@@ -133,19 +130,6 @@
 				tcontent.body, tcontent.isnav, tcontent.searchexclude, tcontent.credits, tcontent.filename,
 				tcontent.parentid, tcontent.releasedate, tcontent.lastupdate, tcontent.created, tcontent.changesetid, 
 				tcontent.mobileexclude
-			");
-
-			if (variables.dbType == 'mysql')
-				writeOutput( ", (SELECT GROUP_CONCAT(tcontentcategoryassign.categoryid separator ', ') 
-									FROM tcontentcategoryassign
-								WHERE contenthistid = tcontent.contenthistid) as categoryids
-							" );
-			else if (variables.dbtype == 'oracle')
-				writeOutput( ", (SELECT LISTAGG(tcontentcategoryassign.categoryid, ',') WITHIN GROUP AS categoryids
-									FROM tcontentcategoryassign
-								WHERE contenthistid = tcontent.contenthistid) as categoryids
-							" );
-			writeOutput("
 		      FROM tcontent
 		      WHERE 
 				  tcontent.active = 1
@@ -187,7 +171,7 @@
 				row['thumbnail'] = "";
 
 			// any list items to arrays
-			row['categoryids'] = listToArray(row['categoryids']);
+			row['categoryids'] = listToArray(valueList($.getBean('contentManager').getCategoriesByHistID(row['contenthistid']).categoryid));
 			row['tags'] = listToArray(row['tags']);
 			row['credits'] = listToArray(row['credits']);
 			row['path'] = listToArray(row['path']);
@@ -216,8 +200,8 @@
 	}
 
 
-	function deleteDoc(string contentId) {
-		return variables.wrapper.deleteDoc(index=variables.index, id=arguments.contentId);
+	function deleteDoc(string index=variables.indexName, string contentId) {
+		return variables.wrapper.deleteDoc(index=arguments.index, id=arguments.contentId);
 	}
 
 
@@ -236,7 +220,9 @@
 		<cfargument name="categoryID" type="string" required="true" default="">
 
 		<cfscript>
+			variables.wrapper = new cfelasticsearch.cfelasticsearch.api.Wrapper();
 			var result = "";
+			var qResult = "";
 
 			// search criteria
 			body = {
@@ -244,10 +230,10 @@
 					query = {
 						query_string = { query = arguments.keywords }
 					}
-					/* , 
+					, 
 					filter = {
 						term = { searchexclude = 0 }
-					} */
+					}
 				}
 			};
 
@@ -278,14 +264,13 @@
 				structAppend(body.filtered, 
 				{
 					filter = {
-						term = { categoryid = "*#arguments.categoryid#*" }
+						term = { categoryids = "*#arguments.categoryid#*" }
 					}
 				}
 				, false);
 			};
 
 			// display start-stop range
-			/*
 			structAppend(body, {
 				range = {
 					displayStart = {
@@ -294,7 +279,7 @@
 						include_upper = true
 					}
 				}
-			}, false); */
+			}, false);
 
 			// wrap query
 			body = { query = body };
@@ -336,7 +321,25 @@
 				, body   = serializeJson( body )
 			);
 
-			return result;
+			// convert results to query
+			qResult = queryNew( structKeyList(result.hits.hits[1]._source) );
+			i = 1;
+
+			for (hit in result.hits.hits) {
+				thisRow = hit._source;
+				queryAddRow(qResult);
+
+				for ( thisCol in listToArray(structKeyList(thisRow)) ) {
+					// handle array values
+					if ( listFindNoCase("tags,path,credits,categoryids", thisCol) )
+						querySetCell(qResult, thisCol, arrayToList(thisRow[thisCol]));
+					else
+						querySetCell(qResult, thisCol, thisRow[thisCol]);
+				}
+				i++
+			}
+
+			return qResult;
 		</cfscript>
 
 	</cffunction>
@@ -349,7 +352,102 @@
 		<cfargument name="sectionID" type="string" required="true" default="">
 		<cfargument name="searchType" type="string" required="true" default="default" hint="Can be default or image">
 
-		<cfreturn arrayOfStructsToQuery(variables.wrapper.search(argumentCollection=arguments)) />
+		<cfscript>
+			variables.wrapper = new cfelasticsearch.cfelasticsearch.api.Wrapper();
+			var result = "";
+			var qResult = "";
+
+			// search criteria
+			body = {
+				filtered = {
+					query = {
+						query_string = { query = arguments.keywords }
+					}
+					, 
+					filter = {
+						term = { searchexclude = 0 }
+					}
+				}
+			};
+
+			// tags
+			if ( len(arguments.tag) ) {
+				structAppend(body.filtered, 
+				{
+					filter = {
+						term = { tags = arguments.tag }
+					}
+				}
+				, false);
+			};
+
+			// if for specific section
+			if ( len(arguments.sectionid) ) {
+				structAppend(body.filtered, 
+				{
+					filter = {
+						term = { parentid = arguments.sectionid }
+					}
+				}
+				, false);
+			};
+
+			// wrap query
+			body = { query = body };
+
+			// pagination
+			body.from = 0;
+			body.size = 100;
+
+			// facets
+			structAppend(body, {
+				facets = {
+					tags = {
+						terms = {field = "tags.facet"}
+					},
+					credits = {
+						terms= {field = "credits.facet"}
+					},
+					subtype = {
+						terms = {field = "subtype"}
+					}
+				}
+			}, false);
+
+			// sorting 
+			structAppend(body, {
+				sort = [
+					"_score"
+				]
+			}, false);
+
+			// execute query
+			result = variables.wrapper._call(
+				  uri    = "/#arguments.siteid#/content/_search"
+				, method = "POST"
+				, body   = serializeJson( body )
+			);
+
+			// convert results to query
+			qResult = queryNew( structKeyList(result.hits.hits[1]._source) );
+			i = 1;
+
+			for (hit in result.hits.hits) {
+				thisRow = hit._source;
+				queryAddRow(qResult);
+
+				for ( thisCol in listToArray(structKeyList(thisRow)) ) {
+					// handle array values
+					if ( listFindNoCase("tags,path,credits,categoryids", thisCol) )
+						querySetCell(qResult, thisCol, arrayToList(thisRow[thisCol]));
+					else
+						querySetCell(qResult, thisCol, thisRow[thisCol]);
+				}
+				i++
+			}
+
+			return qResult;
+		</cfscript>
 	</cffunction>
 
 

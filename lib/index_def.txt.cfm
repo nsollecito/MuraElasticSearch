@@ -42,7 +42,7 @@ curl -XPUT 'localhost:9200/default/content/_mapping?pretty=true' -d '
         "type" : "string", "boost" : "2", "store" : "yes"
       },
       "restricted" : {
-        "type" : "boolean", "store" : "yes"
+        "type" : "byte", "store" : "yes", "null_value" : "0"
       },
       "restrictgroups" : {
         "type" : "string", "index" : "not_analyzed"
@@ -75,10 +75,10 @@ curl -XPUT 'localhost:9200/default/content/_mapping?pretty=true' -d '
       	"type" : "string"
       },
       "isnav" : {
-        "type" : "boolean", "store" : "yes", "index" : "not_analyzed"
+        "type" : "byte", "store" : "yes", "index" : "not_analyzed", "null_value" : "0"
       },
       "searchexclude" : {
-        "type" : "boolean", "store" : "yes"
+        "type" : "byte", "store" : "yes", "null_value" : "0"
       },
       "credits" : {
         "type" : "multi_field", 
