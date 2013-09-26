@@ -75,7 +75,9 @@
 		</form>
 	</p>
 	<cfif isDefined("form.submit") && form.submit == 'Run Search'>
-		<cfset thisSearch = search.search(argumentCollection=form) />
+		<cfset thisSearch = search.getPublicSearchReplacement(siteId=siteId, keywords=form.q) />
+		<cfdump var="#thisSearch#" />
+<!---
 		<cfset results = thisSearch.hits.hits />
 
 		<cfif !arrayLen(results)>
@@ -93,9 +95,11 @@
 						<p>#thisRecord.summary#</p>
 						<small>#thisRecord.credits# | ContentId: #thisRecord.contentId#</small>
 					</li>
+					<br clear="both" />
 				</cfloop>
 			</ol>
 		</cfif>
+--->
 	</cfif>
 	</cfoutput>
 </cfsavecontent>

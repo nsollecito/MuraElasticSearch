@@ -73,6 +73,7 @@
 			index=variables.indexName,
 			type="content",
 			doc={
+				categoryid = listToArray(valueList(arguments.contentBean.getCagoriesQuery().categoryid)),
 				contentid = arguments.contentBean.getContentId(),
 				contenthistid = arguments.contentBean.getContentHistId(),
 				siteid = arguments.contentbean.getSiteId(),
@@ -80,7 +81,7 @@
 				menutitle = arguments.contentBean.getMenuTitle(),
 				summary = arguments.contentBean.getSummary(),
 				body = arguments.contentBean.getBody(),
-				tags = arguments.contentBean.getTags(),
+				tags = listToArray(arguments.contentBean.getTags()),
 				type = arguments.contentBean.getType(),
 				subtype = arguments.contentBean.getSubtype(),
 				urlTitle = arguments.contentBean.getUrlTitle(),
@@ -92,11 +93,11 @@
 				remotesourceurl = arguments.contentBean.getRemoteSourceUrl(),
 				remoteurl = arguments.contentBean.getRemoteUrl(),
 				fileid = arguments.contentBean.getFileId(),
-				path = arguments.contentBean.getPath(),
+				path = listToArray(arguments.contentBean.getPath()),
 				thumbnail = arguments.content.getImageUrl(size="small", complete=true),
 				isnav = arguments.contentBean.getIsNav(),
 				searchexclude = arguments.contentBean.getSearchExclude(),
-				credits = arguments.contentBean.getCredits(),
+				credits = listToArray(arguments.contentBean.getCredits()),
 				filename = arguments.contentBean.getFilename(),
 				parentid = arguments.contentBean.getParentId(),
 				metadesc = arguments.contentBean.getMetaDesc(),
@@ -122,20 +123,35 @@
 	    queryService.setName("rsContent"); 
 	    queryService.setMaxRows(arguments.maxRows);
 
-
 	    savecontent variable="myQuery" {
 		    writeOutput("
 		      SELECT 
-				contentid, contenthistid, siteid, title, menutitle, summary, tags, type, subtype, 
-				urltitle, restricted, restrictgroups, displaystart, displaystop, remotesource, 
-				remotesourceurl, remoteurl, fileid, path, body, isnav, searchexclude, credits, filename,
-				parentid, releasedate, lastupdate, created, expires
+				tcontent.contentid, tcontent.contenthistid, tcontent.siteid, tcontent.title, tcontent.menutitle, 
+				tcontent.summary, tcontent.tags, tcontent.type, tcontent.subtype, tcontent.urltitle, 
+				tcontent.restricted, tcontent.restrictgroups, tcontent.displaystart, tcontent.displaystop, 
+				tcontent.remotesource, tcontent.remotesourceurl, tcontent.remoteurl, tcontent.fileid, tcontent.path, 
+				tcontent.body, tcontent.isnav, tcontent.searchexclude, tcontent.credits, tcontent.filename,
+				tcontent.parentid, tcontent.releasedate, tcontent.lastupdate, tcontent.created, tcontent.changesetid, 
+				tcontent.mobileexclude
+			");
+
+			if (variables.dbType == 'mysql')
+				writeOutput( ", (SELECT GROUP_CONCAT(tcontentcategoryassign.categoryid separator ', ') 
+									FROM tcontentcategoryassign
+								WHERE contenthistid = tcontent.contenthistid) as categoryids
+							" );
+			else if (variables.dbtype == 'oracle')
+				writeOutput( ", (SELECT LISTAGG(tcontentcategoryassign.categoryid, ',') WITHIN GROUP AS categoryids
+									FROM tcontentcategoryassign
+								WHERE contenthistid = tcontent.contenthistid) as categoryids
+							" );
+			writeOutput("
 		      FROM tcontent
 		      WHERE 
-				  active = 1
-				  and type in ('Page','Folder','Portal','Calendar','Gallery','Link','File')
-				  and siteID = '#variables.siteId#'
-				  ORDER BY lastupdate DESC
+				  tcontent.active = 1
+				  and tcontent.type in ('Page','Folder','Portal','Calendar','Gallery','Link','File')
+				  and tcontent.siteID = '#variables.siteId#'
+				  ORDER BY tcontent.lastupdate DESC
 		    ");
 		}
 
@@ -164,10 +180,17 @@
     			row[thisField] = formattedDate;
 	    	}
 	    	
+	    	// get thumbnail image url
 	    	if ( len(row['fileid']) )
 	    		row['thumbnail'] = $.getContentRenderer().createHREFForImage(fileid=row['fileid'], size="small", complete=true);
 	    	else
 				row['thumbnail'] = "";
+
+			// any list items to arrays
+			row['categoryids'] = listToArray(row['categoryids']);
+			row['tags'] = listToArray(row['tags']);
+			row['credits'] = listToArray(row['credits']);
+			row['path'] = listToArray(row['path']);
 
 			// convert all structkeys to lowercase
 			row = convertStructToLower(row);
@@ -300,8 +323,8 @@
 			// sorting 
 			structAppend(body, {
 				sort = [
-					{releasedate = {order = "asc", ignore_unmapped = true}},
-					{lastupdate = {order = "asc", ignore_unmapped = true}},
+					{releasedate = {order = "desc", ignore_unmapped = true}},
+					{lastupdate = {order = "desc", ignore_unmapped = true}},
 					"_score"
 				]
 			}, false);
