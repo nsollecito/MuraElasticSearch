@@ -19,8 +19,7 @@
 
 	search = new lib.searchService(siteId=siteId, pluginConfig=$.getPlugin(), configBean=$.globalConfig());
 
-//writeDump(var=search.getPublicSearchReplacement(siteId=siteId, keywords='City Livin'), abort=1);
-
+//writeDump(var=search.getPrivateSearchReplacement(siteId=siteId, keywords='City Livin'), abort=1);
 
 	if ( isDefined('form.submit') ) { 
 		if ( form.submit == 'Index Records' )

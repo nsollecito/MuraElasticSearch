@@ -65,12 +65,13 @@
 
 	
 
-	function indexItem(any contentBean) {
+	function indexItem(string index=variables,indexName, any contentBean) {
+
 		return variables.wrapper.addDoc(
-			index=variables.indexName,
+			index=arguments.index,
 			type="content",
 			doc={
-				categoryid = listToArray(valueList(arguments.contentBean.getCagoriesQuery().categoryid)),
+				categoryid = listToArray(valueList(arguments.contentBean.getCategoriesQuery().categoryid)),
 				contentid = arguments.contentBean.getContentId(),
 				contenthistid = arguments.contentBean.getContentHistId(),
 				siteid = arguments.contentbean.getSiteId(),
@@ -91,7 +92,7 @@
 				remoteurl = arguments.contentBean.getRemoteUrl(),
 				fileid = arguments.contentBean.getFileId(),
 				path = listToArray(arguments.contentBean.getPath()),
-				thumbnail = arguments.content.getImageUrl(size="small", complete=true),
+				thumbnail = arguments.contentBean.getImageUrl(size="small", complete=true),
 				isnav = arguments.contentBean.getIsNav(),
 				searchexclude = arguments.contentBean.getSearchExclude(),
 				credits = listToArray(arguments.contentBean.getCredits()),
@@ -114,6 +115,8 @@
 		var aDocs = [];
 		var aDateFields = listToArray(uCase("releasedate,lastupdate,created,displaystart,displaystop"));
 		var $ = application.serviceFactory.getBean('$');
+
+		session.siteId = variables.siteId;
 	    
 	    /* set properties using implict setters */ 
 	    queryService.setDatasource(variables.configBean.getDatasource()); 
@@ -170,6 +173,10 @@
 	    	else
 				row['thumbnail'] = "";
 
+			// clean up control chars
+			row['summary'] = reReplace(row['summary'],'[[:cntrl:]]','','all')
+			row['body'] = reReplace(row['body'],'[[:cntrl:]]','','all')
+
 			// any list items to arrays
 			row['categoryids'] = listToArray(valueList($.getBean('contentManager').getCategoriesByHistID(row['contenthistid']).categoryid));
 			row['tags'] = listToArray(row['tags']);
@@ -201,7 +208,10 @@
 
 
 	function deleteDoc(string index=variables.indexName, string contentId) {
-		return variables.wrapper.deleteDoc(index=arguments.index, id=arguments.contentId);
+		try {
+			return variables.wrapper.deleteDoc(index=arguments.index, type="content", id=arguments.contentId);
+		}
+		catch(any e) {}
 	}
 
 
@@ -363,10 +373,6 @@
 					query = {
 						query_string = { query = arguments.keywords }
 					}
-					, 
-					filter = {
-						term = { searchexclude = 0 }
-					}
 				}
 			};
 
@@ -429,21 +435,23 @@
 			);
 
 			// convert results to query
-			qResult = queryNew( structKeyList(result.hits.hits[1]._source) );
-			i = 1;
+			if (arrayLen(result.hits.hits)) {
+				qResult = queryNew( structKeyList(result.hits.hits[1]._source) );
+				i = 1;
 
-			for (hit in result.hits.hits) {
-				thisRow = hit._source;
-				queryAddRow(qResult);
+				for (hit in result.hits.hits) {
+					thisRow = hit._source;
+					queryAddRow(qResult);
 
-				for ( thisCol in listToArray(structKeyList(thisRow)) ) {
-					// handle array values
-					if ( listFindNoCase("tags,path,credits,categoryids", thisCol) )
-						querySetCell(qResult, thisCol, arrayToList(thisRow[thisCol]));
-					else
-						querySetCell(qResult, thisCol, thisRow[thisCol]);
+					for ( thisCol in listToArray(structKeyList(thisRow)) ) {
+						// handle array values
+						if ( listFindNoCase("tags,path,credits,categoryids", thisCol) )
+							querySetCell(qResult, thisCol, arrayToList(thisRow[thisCol]));
+						else
+							querySetCell(qResult, thisCol, thisRow[thisCol]);
+					}
+					i++
 				}
-				i++
 			}
 
 			return qResult;

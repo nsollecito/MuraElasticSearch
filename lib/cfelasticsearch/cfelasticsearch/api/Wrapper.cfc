@@ -35,12 +35,23 @@
 
 	<cffunction name="deleteDoc" access="public" returntype="struct" output="false">
 		<cfargument name="index" type="string" required="true" />
+		<cfargument name="type" type="string" required="true" />
 		<cfargument name="id" type="string" required="true" />
 
-		<cfreturn _call(
-			  uri    = _getIndexAndTypeUri( args=arguments )
-			, method = "DELETE"
-		) />
+		<cfscript>
+			var uri    = _getIndexAndTypeUri( args=arguments );
+			var method = "DELETE";
+
+			if ( StructKeyExists( arguments, 'id' ) and Len( Trim( id ) ) ) {
+				uri    = uri & "/#id#";
+			}
+
+			return _call(
+				  uri    = uri
+				, method = "DELETE"
+			);
+		</cfscript>
+
 	</cffunction>
 
 	<cffunction name="addDoc" access="public" returntype="struct" output="false">

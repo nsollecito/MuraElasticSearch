@@ -22,14 +22,17 @@
 	}
 
 	function onAfterContentSave($) {
-		var content = $.event('contentBean');
+		var content = arguments.$.event('newBean');
+		var siteid=$.event('siteid');
+		
 		if ( content.getActive() && listFindNoCase("Page,Folder,Portal,Calendar,Gallery,Link,File", content.getType()) )
-			variables.searchService.indexItem(content);
+			variables.searchService.indexItem(index=siteId, contentBean=content);
 	}
 
 	function onAfterContentDelete($) {
-		var content=$.event("contentBean")
-		variables.searchService.deleteDoc(content.getContentId());	
+		var content=$.event("contentBean");
+		var siteid=$.event('siteid');
+		variables.searchService.deleteDoc(index=siteid, contentId=content.getContentId());
 	}
 
 </cfscript>
