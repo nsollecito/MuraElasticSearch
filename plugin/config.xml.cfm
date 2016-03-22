@@ -11,7 +11,7 @@
 	<package>elasticSearch</package>
 	<directoryFormat>packageOnly</directoryFormat>
 	<provider></provider>
-	<version>0.1</version>
+	<version>0.2</version>
 	<providerURL></providerURL>
 	<category>Application</category>
 	<settings>

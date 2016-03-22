@@ -1,149 +1,199 @@
-/* Define ElasticSearch Index*/
-
-curl -XPUT 'localhost:9200/default/content/_mapping?pretty=true' -d '
 {
-  "content" : {
-    "properties" : {
-      "contentid" : {
-        "type" : "string", "index" : "not_analyzed"
+  "content": {
+    "dynamic":  true,
+    "properties": {
+      "contentid": {
+        "type": "string",
+        "index": "not_analyzed"
       },
-      "contenthistid" : {
-        "type" : "string", "index" : "not_analyzed"
+      "contenthistid": {
+        "type": "string",
+        "index": "not_analyzed"
       },
-      "siteid" : {
-        "type" : "string", "index" : "not_analyzed"
+      "siteid": {
+        "type": "string",
+        "index": "not_analyzed"
       },
-      "title" : {
-        "type" : "string", "boost" : "3", "store" : "yes"
+      "title": {
+        "type": "string",
+        "boost": "3",
+        "store": "yes"
       },
-      "menutitle" : {
-        "type" : "string", "boost" : "3", "store" : "yes"
+      "menutitle": {
+        "type": "string",
+        "boost": "3",
+        "store": "yes"
       },
-      "categoryids" : {
-        "type" : "string", "index" : "not_analyzed"
+      "categoryids": {
+        "type": "string",
+        "index": "not_analyzed"
       },
-      "summary" : {
-        "type" : "string", "boost" : "3", "store" : "yes"
+      "summary": {
+        "type": "string",
+        "boost": "3",
+        "store": "yes"
       },
-      "tags" : {
-        "type" : "multi_field", 
-        "fields" : {
-        	"tags" : { "type" : "string", "index" : "analyzed" },
-        	"facet" : { "type" : "string", "index" : "not_analyzed" }
+      "tags": {
+        "type": "multi_field",
+        "fields": {
+          "tags": {
+            "type": "string",
+            "index": "analyzed"
+          },
+          "facet": {
+            "type": "string",
+            "index": "not_analyzed"
+          }
         }
       },
-      "type" : {
-        "type" : "string", "store" : "yes"
+      "type": {
+        "type": "string",
+        "store": "yes"
       },
-      "subtype" : {
-        "type" : "string", "store" : "yes"
+      "subtype": {
+        "type": "string",
+        "store": "yes"
       },
-      "urltitle" : {
-        "type" : "string", "boost" : "2", "store" : "yes"
+      "urltitle": {
+        "type": "string",
+        "boost": "2",
+        "store": "yes"
       },
-      "restricted" : {
-        "type" : "byte", "store" : "yes", "null_value" : "0"
+      "restricted": {
+        "type": "byte",
+        "store": "yes",
+        "null_value": "0"
       },
-      "restrictgroups" : {
-        "type" : "string", "index" : "not_analyzed"
+      "display": {
+        "type": "byte",
+        "store": "yes",
+        "null_value": "0"
       },
-      "displaystart" : {
-        "type" : "string", "store" : "yes", "format" : "YYYY-MM-dd HH:mm:ss", "null_value":"0000-00-00 00:00:00"
+      "active": {
+        "type": "byte",
+        "store": "yes",
+        "null_value": "0"
       },
-      "displaystop" : {
-        "type" : "string", "store" : "yes", "format" : "YYYY-MM-dd HH:mm:ss", "null_value":"0000-00-00 00:00:00"
+      "approved": {
+        "type": "byte",
+        "store": "yes",
+        "null_value": "0"
       },
-      "remotesource" : {
-        "type" : "string", "store" : "yes"
+      "restrictgroups": {
+        "type": "string",
+        "index": "not_analyzed"
       },
-      "remotesourceurl" : {
-        "type" : "string", "store" : "yes"
+      "displaystart": {
+        "type": "date",
+        "store": "yes",
+        "format": "YYYY-MM-dd HH:mm:ss",
+        "null_value": "0000-00-00 00:00:00",
+        "ignore_malformed": "true"
       },
-      "remoteurl" : {
-        "type" : "string", "store" : "yes"
+      "displaystop": {
+        "type": "date",
+        "store": "yes",
+        "format": "YYYY-MM-dd HH:mm:ss",
+        "null_value": "0000-00-00 00:00:00",
+        "ignore_malformed": "true"
       },
-      "fileid" : {
-        "type" : "string", "index" : "not_analyzed", "store" : "yes"
+      "remotesource": {
+        "type": "string",
+        "store": "yes"
       },
-      "path" : {
-        "type" : "string", "index" : "not_analyzed", "store" : "yes"
+      "remotesourceurl": {
+        "type": "string",
+        "store": "yes"
       },
-      "body" : {
-        "type" : "string"
+      "remoteurl": {
+        "type": "string",
+        "store": "yes"
       },
-      "thumbnail" : {
-      	"type" : "string"
+      "fileid": {
+        "type": "string",
+        "index": "not_analyzed",
+        "store": "yes"
       },
-      "isnav" : {
-        "type" : "byte", "store" : "yes", "index" : "not_analyzed", "null_value" : "0"
+      "path": {
+        "type": "string",
+        "index": "not_analyzed",
+        "store": "yes"
       },
-      "searchexclude" : {
-        "type" : "byte", "store" : "yes", "null_value" : "0"
+      "body": {
+        "type": "string"
       },
-      "credits" : {
-        "type" : "multi_field", 
-        "fields" : {
-        	"credits" : { "type" : "string", "index" : "analyzed" },
-        	"facet" : { "type" : "string", "index" : "not_analyzed" }
+      "thumbnail": {
+        "type": "string"
+      },
+      "isnav": {
+        "type": "byte",
+        "store": "yes",
+        "index": "not_analyzed",
+        "null_value": "0"
+      },
+      "searchexclude": {
+        "type": "byte",
+        "store": "yes",
+        "null_value": "0"
+      },
+      "credits": {
+        "type": "multi_field",
+        "fields": {
+          "credits": {
+            "type": "string",
+            "index": "analyzed"
+          },
+          "facet": {
+            "type": "string",
+            "index": "not_analyzed"
+          }
         }
       },
-      "filename" : {
-        "type" : "string", "index" : "not_analyzed"
+      "filename": {
+        "type": "string",
+        "index": "not_analyzed"
       },
-      "lastupdate" : {
-        "type" : "string"
+      "lastupdate": {
+        "type": "string",
+        "store": "yes",
+        "format": "YYYY-MM-dd HH:mm:ss",
+        "null_value": "0000-00-00 00:00:00"
       },
-      "parentid" : {
-        "type" : "string", "index" : "not_analyzed"
+      "parentid": {
+        "type": "string",
+        "index": "not_analyzed"
       },
-      "releasedate" : {
-        "type" : "string", "store" : "yes", "format" : "YYYY-MM-dd HH:mm:ss", "null_value":"0000-00-00 00:00:00"
+      "releasedate": {
+        "type": "date",
+        "store": "yes",
+        "format": "YYYY-MM-dd HH:mm:ss",
+        "null_value": "0000-00-00 00:00:00",
+        "ignore_malformed": "true"
       },
-      "lastupdate" : {
-        "type" : "string", "store" : "yes", "format" : "YYYY-MM-dd HH:mm:ss", "null_value":"0000-00-00 00:00:00"
+      "created": {
+        "type": "string",
+        "store": "yes",
+        "format": "YYYY-MM-dd HH:mm:ss",
+        "null_value": "0000-00-00 00:00:00"
       },
-      "created" : {
-        "type" : "string", "store" : "yes", "format" : "YYYY-MM-dd HH:mm:ss", "null_value":"0000-00-00 00:00:00"
+      "expires": {
+        "type": "string",
+        "store": "yes",
+        "format": "YYYY-MM-dd HH:mm:ss",
+        "null_value": "0000-00-00 00:00:00"
       },
-      "expires" : {
-        "type" : "string", "store" : "yes", "format" : "YYYY-MM-dd HH:mm:ss", "null_value":"0000-00-00 00:00:00"
+      "filesize": {
+        "type": "integer",
+        "index": "not_analyzed"
+      },
+      "fileext": {
+        "type": "string",
+        "index": "not_analyzed"
+      },
+      "assocfilename": {
+        "type": "string",
+        "store": "yes"
       }
     }
   }
-}'
-
-
-<!---
-
-
-curl -XGET 'http://localhost:9200/default/content/_search?pretty=true' -d '
-{
- "query": {
-  "filtered" : {
-   "query" : {
-    "field" : { "contentid" : "F90364B7-6F7D-48DE-AA296B6F3DEA9717"}
-   },
-   "query" : {
-    "field" : { "siteid" : "default"}
-   },
-   "filter" : {
-     "term" : { "searchexclude" : 0 }
-   }
-  }
- }
-}'
-
-
-curl -XGET 'http://localhost:9200/default/content/_search?pretty=true' -d '{
-    "query": {
-        "filtered" : {
-            "query" : {
-                "query_string" : {
-                    "query" : "Lorem"
-                }
-            }
-        }
-    }
-}'
-
---->
+}

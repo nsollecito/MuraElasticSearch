@@ -1,8 +1,15 @@
 #!/bin/sh
 
 # OPTIONS:
-#   -f: start in the foreground
-#   -p <filename>: log the pid to a file (useful to kill it later)
+#    -d            daemonize (run in background)
+#    -p pidfile    write PID to <pidfile>
+#    -h
+#    --help        print command line options
+#    -v            print elasticsearch version, then exit
+#    -D prop       set JAVA system property
+#    -X prop       set non-standard JAVA system property
+#   --prop=val
+#   --prop val     set elasticsearch property (i.e.  -Des.<prop>=<val>)
 
 # CONTROLLING STARTUP:
 #
@@ -46,6 +53,20 @@
 # Be aware that you will be entirely responsible for populating the needed
 # environment variables.
 
+
+# Maven will replace the project.name with elasticsearch below. If that
+# hasn't been done, we assume that this is not a packaged version and the
+# user has forgotten to run Maven to create a package.
+IS_PACKAGED_VERSION='elasticsearch'
+if [ "$IS_PACKAGED_VERSION" != "elasticsearch" ]; then
+    cat >&2 << EOF
+Error: You must build the project with Maven or download a pre-built package
+before you can run Elasticsearch. See 'Building from Source' in README.textile
+or visit http://www.elasticsearch.org/download to get a pre-built package.
+EOF
+    exit 1
+fi
+
 CDPATH=""
 SCRIPT="$0"
 
@@ -75,6 +96,7 @@ if [ "x$ES_INCLUDE" = "x" ]; then
                    /usr/local/share/elasticsearch/elasticsearch.in.sh \
                    /opt/elasticsearch/elasticsearch.in.sh \
                    ~/.elasticsearch.in.sh \
+                   $ES_HOME/bin/elasticsearch.in.sh \
                    "`dirname "$0"`"/elasticsearch.in.sh; do
         if [ -r "$include" ]; then
             . "$include"
@@ -89,7 +111,7 @@ fi
 if [ -x "$JAVA_HOME/bin/java" ]; then
     JAVA="$JAVA_HOME/bin/java"
 else
-    JAVA=$(which java)
+    JAVA=`which java`
 fi
 
 if [ ! -x "$JAVA" ]; then
@@ -113,7 +135,7 @@ esac
 launch_service()
 {
     pidpath=$1
-    foreground=$2
+    daemonized=$2
     props=$3
     es_parms="-Delasticsearch"
 
@@ -121,23 +143,67 @@ launch_service()
         es_parms="$es_parms -Des.pidfile=$pidpath"
     fi
 
-    # The es-foreground option will tell ElasticSearch not to close stdout/stderr, but it's up to us not to background.
-    if [ "x$foreground" != "x" ]; then
+    # Make sure we dont use any predefined locale, as we check some exception message strings and rely on english language
+    # As those strings are created by the OS, they are dependant on the configured locale
+    LANG=en_US.UTF-8
+    LC_ALL=en_US.UTF-8
+
+    export HOSTNAME=`hostname -s`
+
+    # The es-foreground option will tell Elasticsearch not to close stdout/stderr, but it's up to us not to daemonize.
+    if [ "x$daemonized" = "x" ]; then
         es_parms="$es_parms -Des.foreground=yes"
         exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
-                org.elasticsearch.bootstrap.ElasticSearch
+                org.elasticsearch.bootstrap.Elasticsearch
         # exec without running it in the background, makes it replace this shell, we'll never get here...
         # no need to return something
     else
-        # Startup ElasticSearch, background it, and write the pid.
+        # Startup Elasticsearch, background it, and write the pid.
         exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
-                    org.elasticsearch.bootstrap.ElasticSearch <&- &
+                    org.elasticsearch.bootstrap.Elasticsearch <&- &
         return $?
     fi
 }
 
+# Print command line usage / help
+usage() {
+    echo "Usage: $0 [-vdh] [-p pidfile] [-D prop] [-X prop]"
+    echo "Start elasticsearch."
+    echo "    -d            daemonize (run in background)"
+    echo "    -p pidfile    write PID to <pidfile>"
+    echo "    -h"
+    echo "    --help        print command line options"
+    echo "    -v            print elasticsearch version, then exit"
+    echo "    -D prop       set JAVA system property"
+    echo "    -X prop       set non-standard JAVA system property"
+    echo "   --prop=val"
+    echo "   --prop val     set elasticsearch property (i.e. -Des.<prop>=<val>)"
+}
+
+# Parse any long getopt options and put them into properties before calling getopt below
+# Be dash compatible to make sure running under ubuntu works
+ARGV=""
+while [ $# -gt 0 ]
+do
+    case $1 in
+      --help) ARGV="$ARGV -h"; shift;;
+      --*=*) properties="$properties -Des.${1#--}"
+           shift 1
+           ;;
+      --*) [ $# -le 1 ] && {
+                echo "Option requires an argument: '$1'."
+                shift
+                continue
+            }
+           properties="$properties -Des.${1#--}=$2"
+           shift 2
+           ;;
+      *) ARGV="$ARGV $1" ; shift
+    esac
+done
+
 # Parse any command line options.
-args=`getopt vfhp:D:X: "$@"`
+args=`getopt vdhp:D:X: $ARGV`
 eval set -- "$args"
 
 while true; do
@@ -151,12 +217,12 @@ while true; do
             pidfile="$2"
             shift 2
         ;;
-        -f)
-            foreground="yes"
+        -d)
+            daemonized="yes"
             shift
         ;;
         -h)
-            echo "Usage: $0 [-f] [-h] [-p pidfile]"
+            usage
             exit 0
         ;;
         -D)
@@ -173,12 +239,13 @@ while true; do
         ;;
         *)
             echo "Error parsing argument $1!" >&2
+            usage
             exit 1
         ;;
     esac
 done
 
 # Start up the service
-launch_service "$pidfile" "$foreground" "$properties"
+launch_service "$pidfile" "$daemonized" "$properties"
 
 exit $?
