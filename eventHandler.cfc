@@ -9,7 +9,7 @@
 <cfcomponent extends="mura.plugin.pluginGenericEventHandler">
 <cfscript>
 	function onApplicationLoad($) {
-		var contentGateway=getBean("contentGateway")
+		var contentGateway=getBean("contentGateway");
 		
 		variables.pluginConfig.addEventHandler(this);
 		variables.searchService = new lib.searchService(siteId=$.event('siteId'), pluginConfig=variables.pluginConfig, configBean=variables.configBean);
